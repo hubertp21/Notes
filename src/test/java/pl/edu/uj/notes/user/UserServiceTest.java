@@ -3,6 +3,7 @@ package pl.edu.uj.notes.user;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import pl.edu.uj.notes.authentication.SecurityConfig;
 import pl.edu.uj.notes.user.exceptions.UserAlreadyExistsException;
 import pl.edu.uj.notes.user.exceptions.UserNotFoundException;
+import pl.edu.uj.notes.user.exceptions.UsersNotFoundException;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(SecurityConfig.class)
@@ -100,5 +102,31 @@ public class UserServiceTest {
 
     assertEquals("User with ID " + userId + " does not exist", exception.getMessage());
     assertFalse(userRepository.existsById(userId));
+  }
+
+  @Test
+  void whenUserPresentInDatabase_thenReturnUsername() {
+    // Given
+    UserEntity user = new UserEntity(USERNAME, PASSWORD);
+    userRepository.save(user);
+    String userId = user.getId();
+    ViewUsersRequest viewUsersRequest = ViewUsersRequest.builder().idList(List.of(userId)).build();
+
+    // When
+    List<String> usernames = userService.viewUsers(viewUsersRequest);
+
+    // Then
+    assertEquals(1, usernames.size());
+    assertEquals(USERNAME, usernames.getFirst());
+  }
+
+  @Test
+  void whenUserIsNotPresentInDatabase_thenThrowException() {
+    // Given
+    String fakeId = "fakeId";
+    ViewUsersRequest viewUsersRequest = ViewUsersRequest.builder().idList(List.of(fakeId)).build();
+
+    // When & Then
+    assertThrows(UsersNotFoundException.class, () -> userService.viewUsers(viewUsersRequest));
   }
 }

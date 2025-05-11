@@ -1,12 +1,15 @@
 package pl.edu.uj.notes.user;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.edu.uj.notes.user.exceptions.UserAlreadyExistsException;
 import pl.edu.uj.notes.user.exceptions.UserNotFoundException;
+import pl.edu.uj.notes.user.exceptions.UsersNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -43,5 +46,18 @@ public class UserService {
     }
 
     return userRepository.getUserEntityByUsername(username);
+  }
+
+  public List<String> viewUsers(ViewUsersRequest request) {
+    List<UserEntity> users = userRepository.findAllById(request.getIdList());
+    if (users.isEmpty()) {
+      String message = String.format("Users '%s' not found", request.getIdList());
+      throw new UsersNotFoundException(message);
+    }
+    return getUsernames(users);
+  }
+
+  private static List<String> getUsernames(List<UserEntity> users) {
+    return users.stream().map(UserEntity::getUsername).collect(Collectors.toList());
   }
 }
